@@ -35,25 +35,22 @@ Traditional e-commerce in emerging markets often faces low buyer trust, non-seri
 
 ## 🏛️ Ecosystem Architecture
 
-```
-            ┌────────────────────────────────────┐
-            │     Ukaaz Mobile & Web Client      │
-            │  (Flutter 3 + Riverpod + GoRouter) │
-            └──────────┬──────────────┬──────────┘
-                       │ HTTPS REST   │ WSS Broadcast
-                       ▼              ▼
-    ┌──────────────────────────┐  ┌──────────────────────────┐
-    │    Ukaaz Core Server     │  │    Supabase Realtime     │
-    │  (Fastify v5 · Cloud Run)│  │   (Broadcast Channels)   │
-    └────┬────────┬────────┬───┘  └──────────────────────────┘
-         │        │        │                    ▲
-         │        │        └──────────┐         │ realtime.send()
-         ▼        ▼                   ▼         │
-┌────────────────────┐  ┌─────────────────┐  ┌──┴──────────────────────┐
-│ PostgreSQL 16      │  │ Cloud Tasks &   │  │ Cloudflare R2 +         │
-│ (Drizzle · Triggers│  │ Cloud Scheduler │  │ ImageKit Signed CDN     │
-│  & Outbox Events)  │  │ (RS256 OIDC)    │  │ (Presigned Staging)     │
-└────────────────────┘  └─────────────────┘  └─────────────────────────┘
+```mermaid
+flowchart TD
+    Client["Ukaaz Mobile & Web Client (Flutter 3 + Riverpod + GoRouter)"]
+    Server["Ukaaz Core Server (Fastify v5 · Cloud Run)"]
+    Realtime["Supabase Realtime (Broadcast Channels)"]
+    Pg["PostgreSQL 16 (Drizzle ORM · Triggers & Outbox Events)"]
+    Tasks["Cloud Tasks & Cloud Scheduler (RS256 OIDC)"]
+    Media["Cloudflare R2 + ImageKit Signed CDN (Presigned Staging)"]
+
+    Client -->|"HTTPS REST"| Server
+    Client -->|"WSS Broadcast"| Realtime
+    Client -->|"Presigned PUT / CDN Fetch"| Media
+    Server -->|"Transactional SQL"| Pg
+    Server -->|"Enqueue & Drain"| Tasks
+    Server -->|"Sign Upload & Asset URLs"| Media
+    Pg -->|"realtime.send()"| Realtime
 ```
 
 ---
